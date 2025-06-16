@@ -10,7 +10,7 @@ import WeatherCard from '@/components/weatherCard';
 import SearchBar from '@/components/searchBar';
 import SavedLocations from '@/components/savedLocations';
 import LocationSwitcher from '@/components/locationSwitcher';
-import WeatherBackground, { getBackgroundImage } from '@/components/weatherBackground';
+import WeatherBackground from '@/components/weatherBackground';
 import WeatherTabs from '@/components/weatherDataTabs';
 
 // Types
@@ -135,13 +135,23 @@ export default function Home() {
       setHistoryData(historyResults);
       
       setView('current');
-    } catch (err: any) {
-      if (err.code === 1) { // Permission denied
-        setCurrentLocationError('Location access was denied. Please enable location access in your browser settings.');
-      } else if (err.code === 2) { // Position unavailable
-        setCurrentLocationError('Could not determine your location. Please try again later.');
-      } else if (err.code === 3) { // Timeout
-        setCurrentLocationError('Location request timed out. Please try again.');
+    } catch (err: unknown) {
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        typeof (err as { code: number }).code === 'number'
+      ) {
+        const code = (err as { code: number }).code;
+        if (code === 1) { // Permission denied
+          setCurrentLocationError('Location access was denied. Please enable location access in your browser settings.');
+        } else if (code === 2) { // Position unavailable
+          setCurrentLocationError('Could not determine your location. Please try again later.');
+        } else if (code === 3) { // Timeout
+          setCurrentLocationError('Location request timed out. Please try again.');
+        } else {
+          setCurrentLocationError('Error getting your location. Please try again.');
+        }
       } else {
         setCurrentLocationError('Error getting your location. Please try again.');
       }
