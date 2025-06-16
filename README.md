@@ -150,5 +150,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 Created with ❤️ by [Randila](https://github.com/RandilaP)
-
-Similar code found with 2 license types
