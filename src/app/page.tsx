@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import axios from 'axios';
 import { Loader2 } from 'lucide-react';
+import { format, subDays } from 'date-fns';
 
 // Components
 import WeatherCard from '@/components/weatherCard';
@@ -10,9 +11,10 @@ import SearchBar from '@/components/searchBar';
 import SavedLocations from '@/components/savedLocations';
 import LocationSwitcher from '@/components/locationSwitcher';
 import WeatherBackground, { getBackgroundImage } from '@/components/weatherBackground';
+import WeatherTabs from '@/components/weatherDataTabs';
 
 // Types
-import { WeatherData } from '@/types/weatherData';
+import { WeatherData, ForecastDay, HistoryDay } from '@/types/weatherData';
 
 export default function Home() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -26,6 +28,11 @@ export default function Home() {
   const [view, setView] = useState<'default' | 'current'>('default');
   const [currentLocationWeather, setCurrentLocationWeather] = useState<WeatherData | null>(null);
   const [currentLocationError, setCurrentLocationError] = useState<string | null>(null);
+  
+  // New state for forecast and history data
+  const [forecastData, setForecastData] = useState<ForecastDay[]>([]);
+  const [historyData, setHistoryData] = useState<HistoryDay[]>([]);
+  const [loadingAdditionalData, setLoadingAdditionalData] = useState(false);
 
   // Load saved locations from localStorage
   useEffect(() => {
@@ -40,24 +47,47 @@ export default function Home() {
     localStorage.setItem('savedLocations', JSON.stringify(savedLocations));
   }, [savedLocations]);
 
-  const fetchWeather = async (query: string) => {
+  const fetchWeatherData = async (query: string) => {
     try {
       setSearching(true);
       setError(null);
+      setLoadingAdditionalData(true);
       
-      const response = await axios.get(
+      // Fetch current weather
+      const currentResponse = await axios.get(
         `https://api.weatherapi.com/v1/current.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${query}&aqi=no`
       );
       
-      setWeather(response.data);
+      setWeather(currentResponse.data);
       setLocation(query);
       setSearchQuery('');
+      
+      // Fetch forecast data (3 days)
+      const forecastResponse = await axios.get(
+        `https://api.weatherapi.com/v1/forecast.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${query}&days=3&aqi=no`
+      );
+      setForecastData(forecastResponse.data.forecast.forecastday);
+      
+      // Fetch history data (last 7 days)
+      const historyPromises = [];
+      for (let i = 1; i <= 7; i++) {
+        const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
+        historyPromises.push(
+          axios.get(`https://api.weatherapi.com/v1/history.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${query}&dt=${date}`)
+        );
+      }
+      
+      const historyResponses = await Promise.all(historyPromises);
+      const historyResults = historyResponses.map(response => response.data.forecast.forecastday[0]);
+      setHistoryData(historyResults);
+      
     } catch (err) {
       setError('Location not found. Please try another search.');
       console.error('Error fetching weather data:', err);
     } finally {
       setLoading(false);
       setSearching(false);
+      setLoadingAdditionalData(false);
     }
   };
 
@@ -76,13 +106,34 @@ export default function Home() {
       });
       
       const { latitude, longitude } = position.coords;
+      const query = `${latitude},${longitude}`;
       
-      // Fetch weather for the current location
-      const response = await axios.get(
-        `https://api.weatherapi.com/v1/current.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${latitude},${longitude}&aqi=no`
+      // Fetch current weather for the current location
+      const currentResponse = await axios.get(
+        `https://api.weatherapi.com/v1/current.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${query}&aqi=no`
       );
       
-      setCurrentLocationWeather(response.data);
+      setCurrentLocationWeather(currentResponse.data);
+      
+      // Fetch forecast data
+      const forecastResponse = await axios.get(
+        `https://api.weatherapi.com/v1/forecast.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${query}&days=3&aqi=no`
+      );
+      setForecastData(forecastResponse.data.forecast.forecastday);
+      
+      // Fetch history data
+      const historyPromises = [];
+      for (let i = 1; i <= 7; i++) {
+        const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
+        historyPromises.push(
+          axios.get(`https://api.weatherapi.com/v1/history.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${query}&dt=${date}`)
+        );
+      }
+      
+      const historyResponses = await Promise.all(historyPromises);
+      const historyResults = historyResponses.map(response => response.data.forecast.forecastday[0]);
+      setHistoryData(historyResults);
+      
       setView('current');
     } catch (err: any) {
       if (err.code === 1) { // Permission denied
@@ -101,13 +152,13 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchWeather(location);
+    fetchWeatherData(location);
   }, []);
 
   const handleSearch = (e: FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      fetchWeather(searchQuery);
+      fetchWeatherData(searchQuery);
       setView('default');
     }
   };
@@ -123,7 +174,7 @@ export default function Home() {
   };
 
   const handleSavedLocationClick = (locationName: string) => {
-    fetchWeather(locationName);
+    fetchWeatherData(locationName);
     setView('default');
   };
 
@@ -186,6 +237,21 @@ export default function Home() {
           isCurrentLocation={view === 'current'}
           savedLocations={savedLocations}
           onSaveLocation={saveCurrentLocation}
+        />
+      )}
+      
+      {/* Loading indicator for additional data */}
+      {loadingAdditionalData && (
+        <div className="mt-8 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
+        </div>
+      )}
+      
+      {/* Weather Tabs with Forecast and History */}
+      {!loadingAdditionalData && forecastData.length > 0 && historyData.length > 0 && (
+        <WeatherTabs 
+          forecastData={forecastData}
+          historyData={historyData}
         />
       )}
     </WeatherBackground>

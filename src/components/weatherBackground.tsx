@@ -34,7 +34,7 @@ export default function WeatherBackground({ weather, children }: WeatherBackgrou
   const backgroundImage = getBackgroundImage(weather);
   
   return (
-    <div className="min-h-screen relative flex justify-center items-center p-4">
+    <div className="min-h-screen relative flex justify-center items-center p-2 sm:p-4 md:p-6">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -49,7 +49,7 @@ export default function WeatherBackground({ weather, children }: WeatherBackgrou
       </div>
       
       {/* Content */}
-      <div className="relative z-10 bg-black/30 backdrop-blur-lg rounded-3xl p-8 max-w-md w-full shadow-xl border border-white/20 text-white">
+      <div className="relative z-10 bg-black/30 backdrop-blur-lg rounded-3xl p-4 sm:p-6 md:p-8 w-full max-w-3xl mx-auto shadow-xl border border-white/20 text-white">
         {children}
       </div>
     </div>

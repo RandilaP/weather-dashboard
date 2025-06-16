@@ -14,7 +14,7 @@ export default function LocationSwitcher({
   gettingLocation
 }: LocationSwitcherProps) {
   return (
-    <div className="flex justify-between items-center mb-4">
+    <div className="flex justify-between items-center mb-3 sm:mb-4">
       <span className="text-xs opacity-70">
         {view === 'default' ? 'Default Location' : 'Current Location'}
       </span>
@@ -23,10 +23,10 @@ export default function LocationSwitcher({
         {view === 'current' && (
           <button 
             onClick={() => setView('default')}
-            className="bg-white/10 hover:bg-white/20 transition-colors p-1.5 rounded-full flex items-center gap-1 text-xs"
+            className="bg-white/10 hover:bg-white/20 transition-colors p-1 sm:p-1.5 rounded-full flex items-center gap-1 text-xs"
           >
             <ChevronLeft className="h-3 w-3" />
-            Default
+            <span className="hidden xs:inline">Default</span>
           </button>
         )}
         
@@ -34,13 +34,13 @@ export default function LocationSwitcher({
           <button 
             onClick={fetchCurrentLocationWeather}
             disabled={gettingLocation}
-            className="bg-white/10 hover:bg-white/20 transition-colors p-1.5 rounded-full flex items-center gap-1 text-xs"
+            className="bg-white/10 hover:bg-white/20 transition-colors p-1 sm:p-1.5 rounded-full flex items-center gap-1 text-xs"
           >
             {gettingLocation ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
               <>
-                My Location
+                <span className="hidden xs:inline">My Location</span>
                 <ChevronRight className="h-3 w-3" />
               </>
             )}
