@@ -1,4 +1,3 @@
-// src/app/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,6 +9,7 @@ import {
   Thermometer,
   Loader2
 } from 'lucide-react';
+import Image from 'next/image';
 
 interface WeatherData {
   location: {
@@ -22,11 +22,13 @@ interface WeatherData {
     condition: {
       text: string;
       icon: string;
+      code: number;
     };
     humidity: number;
     wind_kph: number;
     uv: number;
     feelslike_c: number;
+    is_day: number;
   };
 }
 
@@ -34,6 +36,7 @@ export default function Home() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [backgroundImage, setBackgroundImage] = useState('/sunny.png');
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -42,6 +45,26 @@ export default function Home() {
           `https://api.weatherapi.com/v1/current.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=Colombo&aqi=no`
         );
         setWeather(response.data);
+        
+        // Set background image based on weather condition
+        const conditionText = response.data.current.condition.text.toLowerCase();
+        const isDay = response.data.current.is_day === 1;
+        
+        if (!isDay) {
+          setBackgroundImage('/night.png');
+        } else if (conditionText.includes('rain') || conditionText.includes('drizzle')) {
+          setBackgroundImage('/rainy.png');
+        } else if (conditionText.includes('cloud') || conditionText.includes('overcast')) {
+          setBackgroundImage('/partly-cloudy.png');
+        } else if (conditionText.includes('fog') || conditionText.includes('mist')) {
+          setBackgroundImage('/fog.png');
+        } else if (conditionText.includes('snow')) {
+          setBackgroundImage('/snowy.png');
+        } else if (conditionText.includes('thunder') || conditionText.includes('storm')) {
+          setBackgroundImage('/stormy.png');
+        } else {
+          setBackgroundImage('/sunny.png');
+        }
       } catch (err) {
         setError('Failed to fetch weather data. Please try again later.');
         console.error('Error fetching weather data:', err);
@@ -82,8 +105,22 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex justify-center items-center p-4 bg-gradient-to-br from-primary-light to-primary-dark text-white">
-      <div className="bg-black/10 backdrop-blur-lg rounded-3xl p-8 max-w-md w-full shadow-xl border border-white/20">
+    <div className="min-h-screen relative flex justify-center items-center p-4">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src={backgroundImage}
+          alt="Weather background"
+          fill
+          className="object-cover"
+          priority
+        />
+        {/* Overlay with blur and darkening effect */}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 bg-black/30 backdrop-blur-lg rounded-3xl p-8 max-w-md w-full shadow-xl border border-white/20 text-white">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold mb-1">
