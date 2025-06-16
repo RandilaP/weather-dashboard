@@ -2,7 +2,7 @@
 
 A beautiful, responsive weather application built with Next.js, TypeScript, and Tailwind CSS that provides current weather conditions, forecasts, and historical weather data.
 
-![Weather Dashboard Screenshot](https://example.com/weather-app-screenshot.png)
+![Weather Dashboard Screenshot](https://github.com/RandilaP/weather-dashboard/blob/main/public/screenshot.png?raw=true)
 
 ## Features
 
